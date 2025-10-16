@@ -95,7 +95,7 @@ class SecCommands(str, Enum):
     stop  = "stop"
 
 class Sections:
-    def __init__(self,name: str,op: SecOperation, samples: int):
+    def __init__(self,op: SecOperation, samples: int):
         self.operation = op
         self.samples = samples
         self.secsao: list[SectionsAO] = []

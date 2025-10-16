@@ -7,9 +7,10 @@ class DeviceTypes(str, Enum):
     device = "device"
 
 class Galaxy:
-    def __init__(self, devtype: DeviceTypes, devname: str):
+    def __init__(self, devtype: DeviceTypes, devname: str, topic: str):
         self.device = devtype
         self.name   = devname
+        self.topic  = topic
  
     def to_json(self, payload: str):
-        return "{\"type\":\""+self.device+"\",\"name\":\""+self.name+"\",\"payload\":"+payload+ "}"
+        return "{\"type\":\""+self.device+"\",\"name\":\""+self.name+"\",\"topic\":\""+self.topic+"\",\"payload\":"+payload+ "}"

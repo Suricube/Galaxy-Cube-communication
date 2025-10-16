@@ -1,12 +1,11 @@
 import sys
-import galaxy
-import sections
-from sections import SecOrder, SecOperation
-from galaxy import DeviceTypes
+from galaxy import DeviceTypes, sections, Galaxy, SecOperation, SecOrder
+
+import json
 
 def main() -> int:
 
-    secs = sections.Sections("foo",SecOperation.continuous, 10000)
+    secs = sections.Sections(SecOperation.continuous, 10000)
 
     # some analog sections
     sec = sections.SectionAO(0.,0.,0.,0.,100,SecOrder.linear) 
@@ -26,10 +25,14 @@ def main() -> int:
     print(sdo.to_json())
     secs.appenddo(sdo)
 
-    msg = galaxy.Galaxy(DeviceTypes.device,"fff")
+    msg = Galaxy(DeviceTypes.device,"fff","ui")
     print(msg.to_json(secs.to_payload("start")))
     print(msg.to_json(secs.to_payload("set")))
 
+    ttt= json.loads(msg.to_json(secs.to_payload("start")))
+    print(ttt["topic"])
+    print(type(ttt["topic"]) == str)
+ 
     return 0
 
 if __name__ == '__main__':
