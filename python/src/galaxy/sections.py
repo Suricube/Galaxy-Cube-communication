@@ -1,6 +1,5 @@
 ''' galaxy section claas'''
 from enum import Enum
-import json
 
 # section types
 class SecType(str, Enum):
