@@ -124,9 +124,9 @@ class Sections:
                     secstr += s.to_json() + ","
                 if secstr[-1] == ",":
                     secstr = secstr[:-1]
-                jsonstr = "{\"cmd\":\"" + cmd + "\",\"operation\":\"" + self.operation + "\",\"samples\":\"" + str(self.samples) + "\",\"secs\":[" + secstr + "]}" 
+                jsonstr = "{\"cmd\":\"" + cmd + "\",\"version\":\"0.0.1\",\"operation\":\"" + self.operation + "\",\"samples\":\"" + str(self.samples) + "\",\"secs\":[" + secstr + "]}" 
             case SecCommands.start:
-                jsonstr = "{\"cmd\":\"" + SecCommands.start + "\"}"               
+                jsonstr = "{\"cmd\":\"" + SecCommands.start + "\",\"version\":\"0.0.1\"}"               
             case SecCommands.stop:
                 jsonstr = "{\"cmd\":\"" + SecCommands.stop + "\"}"               
             case _:

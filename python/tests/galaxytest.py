@@ -25,7 +25,7 @@ def main() -> int:
     print(sdo.to_json())
     secs.appenddo(sdo)
 
-    msg = Galaxy(DeviceTypes.device,"fff","ui")
+    msg = Galaxy(DeviceTypes.device,"section","ui")
     print(msg.to_json(secs.to_payload("start")))
     print(msg.to_json(secs.to_payload("set")))
 
