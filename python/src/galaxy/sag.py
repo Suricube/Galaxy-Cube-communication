@@ -1,14 +1,15 @@
 import sys
 import json
-
+from .component import Component
 
 ''' galaxy section claas'''
 from enum import Enum
 
 # section types
-class SecType(str, Enum):
-    analog = "analog"
-    digital= "digital"
+class SecCommands(str, Enum):
+    set_sections  = "set_sections"
+    clear_sections= "clear_sections"
+    set_settings  = "set_settings"
     
 # order of analog signal
 class SecOrder(str, Enum):
@@ -61,7 +62,6 @@ class SectionAO:
         """ ensure a minimal section length of 1"""
         if self.n<1:
             self.n=1
-
 
         """ continuous and discontinous cases"""
         self.p0 = self.yl
@@ -118,17 +118,21 @@ class Transition:
     
 
 # analog section
-class SAG:
-    def __init__(self,name: str = "ASG0", up_shifting: int = 20, down_shifting: int = 20, clocks_per_cycle: int = 40, repetitions: SecRepetions = SecTransition.continuous, version: str = "0.0.1"):
-        self.name: str = name
-        self.up_shift: int    = up_shifting
-        self.down_shift: int  = down_shifting
-        self.clocks_per_cycle: int = clocks_per_cycle
-        self.repetitions = repetitions
+class SAG(Component):
+    def __init__(self,name: str = "ASG0", meta: str = "", reply: str="", version: str = "0.0.1"):
+        Component.__init__(self,name, meta, reply, version)
+        self.up_shift: int    = 20
+        self.down_shift: int  = 20
+        self.clocks_per_cycle: int = 4
+        self.repetitions = SecRepetions.finite
         self.sections:    list[SectionAO] = []
         self.transitions: list[Transition] = []
         self.version: str = version
+        self.cmd = SecCommands.set_sections
 
+    def set_properties(self,repetitions: SecRepetions = SecRepetions.continuous):
+            self.repetitions = repetitions
+            
     # sections
     def append_section(self, sec: SectionAO):
         self.sections.append(sec)
@@ -149,22 +153,6 @@ class SAG:
     def clear_transitions(self):
             self.transitions: list[Transition] = []
 
-    # messages
-    def reset_msg(self, actor_name: str) -> dict:
-        return {
-            "command": "function_component",
-            "parameters": {
-                "actor_name": self.name,
-                "function_name": "reset",
-            }
-        }
-
-    def stop_msg(self, actor_name: str) -> dict:
-        return {
-            "actor_name": self.name,
-            "function_name": "stop",
-        }
-
     def sections_to_msg(self) -> dict:
         sections = [ob.to_dict() for ob in self.sections]
         if self.transitions == []:
@@ -172,81 +160,45 @@ class SAG:
         else:
             transitions = [ob.to_dict() for ob in self.transitions]
         msg = {
-            "command": "function_component",
-            "version":self.version,
-            "parameters": [
-                {
-                    "actor_name": self.name,
-                    "function_name": "execute_json_command",
-                    "function_parameters": {
-                        "set_voltage_signal": {
-                            "sections": sections,
-                            "repetitions": self.repetitions,
-                        },
-                    "section_order": transitions,
-                    },
-                }
-            ],
-        }
-        return json.dumps(msg)
+                "set_voltage_signal": {
+                    "sections": sections,
+                    "repetitions": self.repetitions,
+                },
+            "section_order": transitions,
+            },
+        return msg
 
+    def to_payload(self):
+        match self.cmd:
+            case SecCommands.set_settings:
+                return self.settings_to_msg()
+            case SecCommands.set_sections:
+                return self.sections_to_msg()
+            case _:
+                return "{}"
+    
     def settings_to_msg(self) -> dict:
         msg = {
-            "command": "function_component", # device, actor, module, -> component
-            "parameters": [ # component_msgs
+            "set_settings": {
+                "up_shifting": self.up_shift,
+                "down_shifting": self.down_shift,
+                "clocks_per_cycle": self.clocks_per_cycle,
+                "fpga_clock_freq": 124998749.0,
+                "a": 0.00015,
+                "b": -5.0,
+                "repetitions": "infinite",
+                "trigger_module_selection": 255,
+                "driver_selection": 3,
+                "SLICE_STARTING_BYTE": 0,
+                "ORDER_STARTING_BYTE": 400,
+            },
+            "reply":[
                 {
-                    "component_cmd": "execute_json_command", # cmd
-                    "actor_name": self.name, # component, name
-                    "function_parameters": { # payload
-                        "meta":{
-                            "version": "0.1.0",
-                            "desc":""
-                        },
-                        "set_settings": {
-                            , #ssss
-                            "up_shifting": self.up_shift,
-                            "down_shifting": self.down_shift,
-                            "clocks_per_cycle": self.clocks_per_cycle,
-                            "fpga_clock_freq": 124998749.0,
-                            "a": 0.00015,
-                            "b": -5.0,
-                            "repetitions": "infinite",
-                            "trigger_module_selection": 255,
-                            "driver_selection": 3,
-                            "SLICE_STARTING_BYTE": 0,
-                            "ORDER_STARTING_BYTE": 400,
-                        },
-                        "reply":[
-                            {
-                                "timing": "at_arrival" # after_processing , after x s
-                                "topic": xxx, 
-                                "payload": JSON
-                            }
-                        ]
-                    },
+                    "timing": "at_arrival", # after_processing , after x s
+                    "topic": "xxx", 
+                    "payload": {}
                 }
-            ],
+            ]
         }
-        return json.dumps(msg)
+        return msg
 
-def main() -> int:
-
-
-    sag0 = SAG("ASG0",21.,22.,41.,SecRepetions.continuous)
-    sec  = SectionAO(0.,1.,0.,0.,10,SecTimeUnits.ms,SecOrder.linear)
-    sag0.append_section(sec)
-
-    sec.to_poly()
-    for i in range(sec.n):
-        sec.iter()
-        print(i,sec.p0)
-
-    sag0.append_transitions(Transition(0,SecTransition.continuous))
-    sag0.append_transitions(Transition(1,SecTransition.continuous))
-    print(sag0.settings_to_msg())
-    print(sag0.sections_to_msg())
-
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main())
