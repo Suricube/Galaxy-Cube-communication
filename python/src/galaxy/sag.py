@@ -1,9 +1,10 @@
 import sys
-import json
 from .component import Component
 
 ''' galaxy section claas'''
 from enum import Enum
+
+VERSION = "0.1.0"
 
 # section types
 class SecCommands(str, Enum):
@@ -105,9 +106,6 @@ class SectionAO:
         self.p1 = self.p1 + self.p2
         self.p2 = self.p2 + self.p3
 
-    def to_json(self):
-        return json.dumps(self.to_dict)
-
 class Transition:
     def __init__(self, index: int, type: SecTransition):
         self.index = index
@@ -119,15 +117,14 @@ class Transition:
 
 # analog section
 class SAG(Component):
-    def __init__(self,name: str = "ASG0", meta: str = "", reply: str="", version: str = "0.0.1"):
-        Component.__init__(self,name, meta, reply, version)
+    def __init__(self,name: str = "ASG0"):
+        Component.__init__(self, name, VERSION)
         self.up_shift: int    = 20
         self.down_shift: int  = 20
         self.clocks_per_cycle: int = 4
         self.repetitions = SecRepetions.finite
         self.sections:    list[SectionAO] = []
         self.transitions: list[Transition] = []
-        self.version: str = version
         self.cmd = SecCommands.set_sections
 
     def set_properties(self,repetitions: SecRepetions = SecRepetions.continuous):
@@ -167,15 +164,15 @@ class SAG(Component):
             "section_order": transitions,
             },
         return msg
-
-    def to_payload(self):
+    
+    def to_payload(self)->dict:
         match self.cmd:
             case SecCommands.set_settings:
                 return self.settings_to_msg()
             case SecCommands.set_sections:
                 return self.sections_to_msg()
             case _:
-                return "{}"
+                return {}
     
     def settings_to_msg(self) -> dict:
         msg = {

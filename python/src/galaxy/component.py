@@ -1,6 +1,9 @@
 ''' component class for galaxy controller'''
 from enum import Enum
 import json
+from .meta import to_meta
+from .reply import to_replyrequest, trigger
+import uuid
 
 # order of analog signal
 class ComponentCmds(str, Enum):
@@ -12,11 +15,21 @@ class ComponentCmds(str, Enum):
     parsejson   = 'parsejson'
 
 class Component:
-    def __init__(self, name: str, meta: str, reply: str, version: str):
+    def __init__(self, name: str, version: str):
         self.name    = name
-        self.meta    = meta
-        self.reply   = reply
-        self.version = version        
+        self.meta    = {}
+        self.replyrequest = {}
+        self.version = version
+        self.cmd = None
+
+    def set_meta(self, desc: str):
+        self.meta = to_meta(desc, self.version)
+        return self
+    
+    def set_reply(self, trigger: trigger, topic: str, payload: dict):
+        id = str(uuid.uuid1())
+        self.replyrequest = to_replyrequest(trigger, topic, payload, id)
+        return self
 
     # instantiate plugin from local rust source
     def rustplugin(self):
@@ -31,6 +44,8 @@ class Component:
     def plugin_close(self):
         pass
 
+    # overwritten by specific component implementation
+    #@overwrite abc.abstractmethod
     def to_payload(self)->dict:
         return {}
     
@@ -42,9 +57,10 @@ class Component:
                         "component_cmd": "execute_json_command",
                         "component_name": self.name,
                         "payload":{
-                            "meta":"dd",
-                            "ss":self.to_payload(),
-                            "reply":"sss"
+                            "cmd":self.cmd,
+                            "meta":self.meta,
+                            "parameters":self.to_payload(),
+                            "reply":self.replyrequest
                             }
                     }
                 ]

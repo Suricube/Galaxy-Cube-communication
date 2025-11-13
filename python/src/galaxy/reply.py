@@ -1,27 +1,19 @@
-''' galaxy section claas'''
+''' galaxy reply msgs'''
 from enum import Enum
 
-msg = {
-    "reply": [{
-                    "timing": "at_arrival", # after_processing , after x s
-                    "topic": "xxx", 
-                    "payload": {}
-                }]
-}
-
-class timing(str, Enum):
+class trigger(str, Enum):
     at_arrival  = "at_arrival"
     new_state   = "new_state"
+    on_completion= "on_completion"
 
-
-msg = {
-    "meta":{
-        "msg_id":"uuic", # unique message id, used to asign replies to messages in async framework
-        "desc":"some infos about the message",
-        "version":"0.1.0",
-        "comp_id":"uuic" # unique component id
+def to_replyrequest(trigger: trigger, topic: str, payload: dict, id: str)->dict:
+    return {
+        "trigger": trigger,
+        "topic": topic,
+        "payload": payload,
+        "msg_id":id
     }
-}
+
 
 class GalaxyErrors(str, Enum):
     none                = "none"

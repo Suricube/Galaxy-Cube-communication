@@ -1,40 +1,45 @@
 import sys
 from src.galaxy import *
-from asyncio import Future
 import asyncio
-import json
 import time
-import signal
-
-from gmqtt import Client as MQTTClient
-
-
-
 
 STOP = asyncio.Event()
-
-
 
 def ask_exit(*args):
     STOP.set()
 
-
 async def main(loop) -> int:
 
-    # = asyncio.get_event_loop()
+    # connect to Galaxy over MQTT and listen to galaxy topics
+    #g = Galaxy(loop, "localhost","galaxy")
 
-    sag0 = SAG("ASG0")
+    gs = GalaxyMQTT(loop,"localhost",1883)
+    #gsWS = GalaxyWS(loop, "localhost",1882)
+    await gs.connect()
+
+    print("before caps!")
+    s = System().set_meta("test").set_reply(trigger.at_arrival, "ddd", {})
+    result = await s.get_capabilities(gs)
+    print(result)
+    print("after caps!")
+
+    print(s.caps)
+    
+#    f1 = s.get_capabilities(gs)
+#    f2 = s.get_capabilities(gs)
+#    join(f1,f2)
+
+    sag0 = SAG("ASG0") #.set_reply("").set_meta("")
     sag0.set_properties(SecRepetions.continuous)
     sec  = SectionAO(0.,1.,0.,0.,10,SecTimeUnits.ms,SecOrder.linear)
     sag0.append_section(sec)
 
-    g = Galaxy(loop, "localhost","galaxy")
-    await g.connect()
+#    result = await sag_0.set_section(gs)
+#    result = await gpio_0.set_start(gs)
 
     print(sag0.to_msg())
-    f = g.send(sag0)
-    result = await f
-    print(result)
+#    result = await g.send(sag0)
+#    print(result)
 
     print("after send!")
 
