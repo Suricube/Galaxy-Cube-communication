@@ -4,6 +4,14 @@ import aiomqtt
 import json
 import uuid
 
+def warp_payload(name: str, payload: dict):
+    msg = {
+        "command":"execute_json_command",
+        "name":name,
+        "payload":payload
+    }
+    return msg
+
 class capability:
     def __init__(self, name,status):
         self.name = name
@@ -19,44 +27,41 @@ async def listen():
     async with aiomqtt.Client("localhost", identifier="mock",clean_session=True) as client:
         await client.subscribe("ui")
         async for message in client.messages:
-            id = 123
-            comp_id = 234
             print("msg")
             print("msg: "+message.payload.decode("utf-8"))
             value = json.loads(message.payload.decode("utf-8"))
-            cmd = value["command"]
-            print(cmd)
+            name = value["name"]
+            payload = value.get("payload")
             msg = {}
-            match cmd:
+            match name.lower():
                 case "system":
-                    name = value["component_tasks"][0]["component_cmd"]
-                    print(name)
-                    match name:
+                    cmd = payload["cmd"]
+                    id = payload.get("reply",{}).get("msg_id", None)
+                    print(name+" -> "+cmd+"  id: "+id)
+                    match cmd:
                         case "capabilities":
                             caps = [ob.to_dict() for ob in capabilities]
-                            msg = {
-                                "component_name":name,
+                            rpayload = {
+                                "cmd":"set_capabilities",
                                 "msg_id": id,
-                                "component_id": comp_id,
-                                "capabilities":caps,
+                                "caps":caps,
                             }
                         case _:
-                            msg = {"error":"wrong command"}
+                            rpayload = {"error":"wrong command"}
 
-                case "component":
-                    name = value["tasks"][0]["component_name"]
-                    print(name)
-                    id = 1234
-                    comp_id=1234
-                    msg = {
-                        "component_name":name,
+                case "asg_0":
+                    cmd = payload["cmd"]
+                    id = payload.get("reply",{}).get("msg_id", None)
+                    print(name+" -> "+cmd+"  id: "+id)
+                    rpayload = {
+                        "cmd":cmd,
                         "msg_id": id,
-                        "component_id": comp_id
                     }
                 case _:
-                    msg = {"error":"wrong command"}
-            print(json.dumps(msg))
-            await client.publish("galaxy",payload=json.dumps(msg))
+                    print(name)
+                    rpayload = {"error":"component not found"}
+            print(json.dumps(rpayload))
+            await client.publish("galaxy",payload=json.dumps(warp_payload(name, rpayload)))
 
         async def disconnect(self):
             await self.c.disconnect()

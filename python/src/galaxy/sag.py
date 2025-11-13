@@ -1,5 +1,8 @@
 import sys
 from .component import Component
+from .socket import GalaxySocket
+from asyncio import Future
+from result import Ok, Err, Result, is_ok, is_err
 
 ''' galaxy section claas'''
 from enum import Enum
@@ -198,4 +201,15 @@ class SAG(Component):
             ]
         }
         return msg
+    
+    def set_sections(self, socket: GalaxySocket)->Future:
+        self.cmd = SecCommands.set_sections
+        return socket.sendawait(self.to_msg(), self.reply)
+    
+    def reply(self, payload: dict)->Result[str, str]:
+#            caps = payload.get("caps", None) 
+#            if caps is None:
+#                return Err('System: parsing error in capabilities')
+#            self.caps = caps
+            return Ok("set sections")
 

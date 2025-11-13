@@ -23,7 +23,7 @@ class GalaxySocket:
         pass
     def sendawait(self, msg: str, callback)-> Future:
         value = json.loads(msg)
-        id = value.get("tasks",{})[0].get("payload",{}).get("reply",{}).get("msg_id")
+        id = value.get("payload",{}).get("reply",{}).get("msg_id")
         my_future = Future()
         # register future and callback in active reply list before sending message
         if id is not None:  # if uuid exists keep track of id for async reply message
@@ -76,8 +76,8 @@ class GalaxyMQTT(GalaxySocket):
 
     def parse_message(self, msg: str):
         value = json.loads(msg)
-        id = value.get("msg_id")       # msg needs to have an id
-        payload = value.get("payload") # msg needs to have a payload
+        payload = value.get("payload", None) # msg needs to have a payload
+        id = payload.get("msg_id", None)     # msg needs to have an id
         if  id is not None and payload is not None:
             print("found id and payload")
             futcb = active_galaxy_msgs.get(id, None)

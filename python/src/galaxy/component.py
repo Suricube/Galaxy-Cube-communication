@@ -51,11 +51,11 @@ class Component:
     
     def to_msg(self)->str:
         msg = {
-            "command": "component", 
-            "tasks": [ 
-                    {
-                        "component_cmd": "execute_json_command",
-                        "component_name": self.name,
+#            "command": "component", 
+#            "tasks": [ 
+#                    {
+                        "command": "execute_json_command",
+                        "name": self.name,
                         "payload":{
                             "cmd":self.cmd,
                             "meta":self.meta,
@@ -63,6 +63,6 @@ class Component:
                             "reply":self.replyrequest
                             }
                     }
-                ]
-            }
+#                ]
+#            }
         return json.dumps(msg)

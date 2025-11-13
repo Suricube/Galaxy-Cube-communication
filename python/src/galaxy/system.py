@@ -34,14 +34,13 @@ class System(Component):
         return msg
 
     def get_capabilities(self, socket: GalaxySocket)->Future:
+        self.cmd = SystemCmds.capabilities
         return socket.sendawait(self.to_msg(), self.set_capabilities)
  
     def set_capabilities(self, payload: dict)->Result[str, str]:
-            print("in set caps")
-            print(payload)
             caps = payload.get("caps", None) 
             if caps is None:
-                return Err('User does not exist')
+                return Err('System: parsing error in capabilities')
             self.caps = caps
-            return Ok("caps worked")
+            return Ok("received caps data")
     

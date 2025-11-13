@@ -2,6 +2,7 @@ import sys
 from src.galaxy import *
 import asyncio
 import time
+from result import Ok, Err, Result, is_ok, is_err
 
 STOP = asyncio.Event()
 
@@ -16,32 +17,24 @@ async def main(loop) -> int:
     gs = GalaxyMQTT(loop,"localhost",1883)
     #gsWS = GalaxyWS(loop, "localhost",1882)
     await gs.connect()
-
-    print("before caps!")
+    
+    # get system capabilites
     s = System().set_meta("test").set_reply(trigger.at_arrival, "ddd", {})
     result = await s.get_capabilities(gs)
-    print(result)
-    print("after caps!")
-
+    if is_err(result):
+        print(result.err_value)
     print(s.caps)
-    
-#    f1 = s.get_capabilities(gs)
-#    f2 = s.get_capabilities(gs)
-#    join(f1,f2)
 
-    sag0 = SAG("ASG0") #.set_reply("").set_meta("")
+
+    # set sections
+    sag0 = SAG("asg_0").set_reply(trigger.at_arrival, "ddd", {}).set_meta("asg")
     sag0.set_properties(SecRepetions.continuous)
     sec  = SectionAO(0.,1.,0.,0.,10,SecTimeUnits.ms,SecOrder.linear)
     sag0.append_section(sec)
 
-#    result = await sag_0.set_section(gs)
-#    result = await gpio_0.set_start(gs)
-
-    print(sag0.to_msg())
-#    result = await g.send(sag0)
-#    print(result)
-
-    print("after send!")
+    result = await sag0.set_sections(gs)
+    if is_err(result):
+        print(result.err_value)
 
     await STOP.wait()
     await g.disconnect()
