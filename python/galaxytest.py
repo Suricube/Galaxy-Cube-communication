@@ -14,13 +14,17 @@ async def main(loop) -> int:
     # connect to Galaxy over MQTT and listen to galaxy topics
     #g = Galaxy(loop, "localhost","galaxy")
 
-    gs = GalaxyMQTT(loop,"localhost",1883)
-    #gsWS = GalaxyWS(loop, "localhost",1882)
+    #gs = GalaxyMQTT(loop,"localhost",1883)
+    gs = GalaxyWS(loop,"localhost",8081)
     await gs.connect()
-    
+    #asyncio.ensure_future(gs.wsloop())
+
+    print("connected")
+
     # get system capabilites
     s = System().set_meta("test").set_reply(trigger.at_arrival, "ddd", {})
-    result = await s.get_capabilities(gs)
+    result = await s.get_activecomponents(gs)
+    time.sleep(10)
     if is_err(result):
         print(result.err_value)
     print(s.caps)

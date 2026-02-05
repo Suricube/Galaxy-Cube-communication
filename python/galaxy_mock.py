@@ -2,7 +2,7 @@
 import asyncio
 import aiomqtt
 import json
-import uuid
+from .mock_system import *
 
 def warp_payload(name: str, payload: dict):
     msg = {
@@ -12,16 +12,7 @@ def warp_payload(name: str, payload: dict):
     }
     return msg
 
-class capability:
-    def __init__(self, name,status):
-        self.name = name
-        self.id = uuid.uuid3(uuid.NAMESPACE_DNS,name)
-        self.status= status
 
-    def to_dict(self):
-        return {"name":self.name,"id":str(self.id),"status":self.status}
-
-capabilities : list[capability] = [capability("ASG_0","running"),capability("ASG_1","running")]
 
 async def listen():
     async with aiomqtt.Client("localhost", identifier="mock",clean_session=True) as client:
@@ -35,20 +26,8 @@ async def listen():
             msg = {}
             match name.lower():
                 case "system":
-                    cmd = payload["cmd"]
-                    id = payload.get("reply",{}).get("msg_id", None)
-                    print(name+" -> "+cmd+"  id: "+id)
-                    match cmd:
-                        case "capabilities":
-                            caps = [ob.to_dict() for ob in capabilities]
-                            rpayload = {
-                                "cmd":"set_capabilities",
-                                "msg_id": id,
-                                "caps":caps,
-                            }
-                        case _:
-                            rpayload = {"error":"wrong command"}
-
+                    result = system_paring(payload)
+                    rpayload = result.ok_value()
                 case "asg_0":
                     cmd = payload["cmd"]
                     id = payload.get("reply",{}).get("msg_id", None)

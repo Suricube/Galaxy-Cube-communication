@@ -5,6 +5,10 @@ from asyncio import AbstractEventLoop
 from gmqtt import Client as MQTTClient
 import json
 from result import Ok, Err, Result, is_ok, is_err
+from websockets.asyncio.client import connect as WSClient
+
+
+ws = None
 
 # singleton
 active_galaxy_msgs = {}
@@ -19,9 +23,9 @@ class GalaxySocket:
     def __init__(self, loop: AbstractEventLoop):
         self._loop = loop
 
-    def send():
+    async def send():
         pass
-    def sendawait(self, msg: str, callback)-> Future:
+    async def sendawait(self, msg: str, callback)-> Future:
         value = json.loads(msg)
         id = value.get("payload",{}).get("reply",{}).get("msg_id")
         my_future = Future()
@@ -33,11 +37,25 @@ class GalaxySocket:
             self._loop.create_task(add_to_list(id, my_future, callback))
             my_future.set_result(None)
         # send message, potentially need to check if executed correctly here
-        self.send(msg)
+        await self.send(msg)
         return my_future
     
-    def parse_message(msg: str):
-        pass
+#    def parse_message(msg: str):
+#        pass
+    def parse_message(self, msg: str):
+        value = json.loads(msg)
+        payload = value.get("payload", None) # msg needs to have a payload
+        id = payload.get("msg_id", None)     # msg needs to have an id
+        if  id is not None and payload is not None:
+            print("found id and payload")
+            futcb = active_galaxy_msgs.get(id, None)
+            if futcb is not None:
+                fut = futcb.get("fut")
+                cb = futcb.get("callback")
+                print("found future and callback")
+                result = cb(payload) # process payload by component callback
+                fut.set_result(result)
+                active_galaxy_msgs.pop(id)
 
 # MQTT implementation of GalaxySocket
 
@@ -56,7 +74,7 @@ class GalaxyMQTT(GalaxySocket):
     async def connect(self):
         await self.c.connect(self.ip)
 
-    def send(self, msg: str):
+    async def send(self, msg: str):
         self.c.publish('ui', msg, qos=1,content_type='utf-8')
 
     def on_connect(self, client, flags, rc, properties):
@@ -74,26 +92,31 @@ class GalaxyMQTT(GalaxySocket):
     def on_subscribe(self, client, mid, qos, properties):
         print('SUBSCRIBED')
 
-    def parse_message(self, msg: str):
-        value = json.loads(msg)
-        payload = value.get("payload", None) # msg needs to have a payload
-        id = payload.get("msg_id", None)     # msg needs to have an id
-        if  id is not None and payload is not None:
-            print("found id and payload")
-            futcb = active_galaxy_msgs.get(id, None)
-            if futcb is not None:
-                fut = futcb.get("fut")
-                cb = futcb.get("callback")
-                print("found future and callback")
-                result = cb(payload) # process payload by component callback
-                fut.set_result(result)
-                active_galaxy_msgs.pop(id)
 
 # Websocket implementation of GalaxySocket
 
 class GalaxyWS(GalaxySocket):
     def __init__(self, loop: AbstractEventLoop, ip: str, port: int):
         GalaxySocket.__init__(self, loop)
-        print("start client to MQTT")
         self.ip = ip
         self.port = port
+
+
+    async def connect(self):
+        print("start client to WS")
+        self.c = await WSClient("ws://localhost:8081/ws")
+        asyncio.ensure_future(self.wsloop(), loop=self._loop)
+
+    async def wsloop(self):   
+        print("wsloop") 
+        async with self.c as websocket:
+            self.c = websocket 
+            await websocket.send("Hello world!")
+            async for message in websocket:
+                print("---> "+message)
+#                jmsg = json.loads(message)
+#                self.parse_message(message.decode("utf-8"))
+    async def send(self, msg: str):
+        await self.c.send(msg)
+        print(msg)
+

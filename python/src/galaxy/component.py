@@ -18,6 +18,7 @@ class Component:
     def __init__(self, name: str, version: str):
         self.name    = name
         self.meta    = {}
+        self.uuid    = ""
         self.replyrequest = {}
         self.version = version
         self.cmd = None
@@ -28,6 +29,7 @@ class Component:
     
     def set_reply(self, trigger: trigger, topic: str, payload: dict):
         id = str(uuid.uuid1())
+        self.uuid = id
         self.replyrequest = to_replyrequest(trigger, topic, payload, id)
         return self
 
@@ -54,12 +56,13 @@ class Component:
 #            "command": "component", 
 #            "tasks": [ 
 #                    {
-                        "command": "execute_json_command",
+                        "type": "manager",
                         "name": self.name,
                         "payload":{
                             "cmd":self.cmd,
                             "meta":self.meta,
-                            "parameters":self.to_payload(),
+                            "uuid":self.uuid,
+                            "properties":self.to_payload(),
                             "reply":self.replyrequest
                             }
                     }
