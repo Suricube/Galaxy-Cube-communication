@@ -21,7 +21,7 @@ impl Galaxy{
         self.payload = payload;
         serde_json::to_string(self)
     }
-    pub fn to_str<T: Payload + Name + Device> (device: &T) -> String{
+    pub fn to_str<T: Pyload + Name + Device> (device: &T) -> String{
         format!("{}, {}, {}",device.payload(), device.name(), device.device().to_string().to_lowercase())
     }
 }
@@ -32,7 +32,7 @@ pub trait Name{
     fn name(&self) -> String;
 }
 
-pub trait Payload{
+pub trait Pyload{
     fn payload(&self) -> String;
 }
 
